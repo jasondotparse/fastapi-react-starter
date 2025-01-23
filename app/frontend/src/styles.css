@@ -1,0 +1,68 @@
+/* Task Cards */
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  
+  .card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  }
+  
+  /* Modal Overlay (Optional Improvement) */
+  .modal-backdrop {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+  }
+  
+  /* Dynamic Task Form Enhancements */
+form {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  h3 {
+    color: #333;
+  }
+  
+  button {
+    transition: all 0.3s ease;
+  }
+  
+  button:hover {
+    transform: scale(1.05);
+  }
+  
+    /* Task List */
+    .btn-link {
+        text-decoration: none;
+      }
+      
+      .btn-link:hover {
+        text-decoration: underline;
+      }
+      
+      .table i {
+        cursor: pointer;
+      }
+      
+      .modal pre {
+        background-color: #f8f9fa;
+        padding: 10px;
+        border-radius: 5px;
+        overflow-x: auto;
+      }
+      
+      .modal-lg {
+        max-width: 90%;
+      }
+      
+      /* Worker Manager */
+      .card {
+        border-radius: 10px;
+      }
+      
+      .btn {
+        min-width: 150px;
+      }
+      
