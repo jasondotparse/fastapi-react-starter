@@ -5,21 +5,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-
-from app.database import Base, engine, SessionLocal
-from app.models import UserModel
-from app.schemas import UserSchema, UserRespSchema
+from app.schemas import InitalizeCharactersRequest, Participant, Conversation
 from dotenv import load_dotenv
-from app.logger import setup_logger
+import logging
+from typing import List
 
 # Load environment variables and setup logger
 load_dotenv()
 
+logger = logging.getLogger(__name__)
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI app."""
-    # Read the SERVE_UI value from the .env file
-    serve_ui = os.getenv("SERVE_UI", "false").lower() == "true"
 
     app = FastAPI(title="FastAPI User Manager")
 
@@ -43,33 +40,34 @@ def create_app() -> FastAPI:
     signal.signal(signal.SIGTERM, signal_handler)
 
     # Routes
-    @app.post("/user/add")
-    def add_user(user: UserSchema, db: Session = Depends(get_db)):
+    @app.post("/initializeCharacters")
+    def initialize_characters(initalizeCharactersRequest: InitalizeCharactersRequest) -> List[Participant]:
         """
-        Add a new user to the database.
+          This API is invoked at the start of a conversation, to generate a cast of AI agents which will 
+          List<Participant> (see section "data model" below) in the conversation.
         """
         try:
-            new_user = UserModel(username=user.username, age=user.age)
-            db.add(new_user)
-            db.commit()
-            db.refresh(new_user)
-            logger.info(f"Created new user ID: {new_user.id}")
-            return {"id": new_user.id, "message": "User created successfully"}
+            ## todo: implement this
+            participantList = []
+            return participantList
         except Exception as e:
             logger.error(f"Error creating user: {str(e)}")
             raise HTTPException(status_code=500, detail="Error creating user")
 
-    @app.get("/user/all")
-    def get_all_users(db: Session = Depends(get_db)):
+    @app.get("/continueConversation")
+    def continue_conversation(conversation: Conversation) -> Conversation:
         """
-        Get all users from the database.
+          At a high level, this simply takes in a <Conversation> (see section "data model" below) and returns an 
+          updated <Conversation> containing additional <DialogTurns> that encode the AI's response to the most recent <DialogTurn>. 
+          In this way, application state is held in the requests themselves, allowing the back end to be fully stateless. 
+          When a Conversation is sent from the back end to the front end, the front end can reply with an updated <Conversation> 
+          containing additional dialog turns, if the user chose to add a comment to the ongoing conversation. 
+          See readme.md section "Conversation flow" for more.
         """
         try:
-            users = db.query(UserModel).all()
-            user_list = [UserRespSchema(id=user.id, username=user.username, age=user.age) for user in users]
-            user_list = [user.dict() for user in user_list]
-            logger.info("Retrieved all users")
-            return user_list
+            ## todo: implement this
+            updated_conversation = {}
+            return updated_conversation
         except Exception as e:
             logger.error(f"Error retrieving users: {str(e)}")
             raise HTTPException(status_code=500, detail="Error retrieving users")

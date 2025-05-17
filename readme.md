@@ -124,9 +124,14 @@ Should be found in the .env file at the root of this project, under the name `CH
 CHAI_API_BEARER_TOKEN="Bearer abc123xyz456"
 ```
 
-
 ## Candiates for additional improvements
+* Persistent storage. Since the app is stateless, the entire conversation history is erased with each restart of the back end. The Conversation object could be encoded as a pickle file or json.stringified and saved to a database in order to preserve conversation history easily. 
 * Allow the customer to edit any individiual dialog turn, not just add new ones to the end of the Conversation.
 * Back story customization: Instead of hard coding agents to be fantasy characters, allow the user to provide the "setting" in which the characters are generated, or furthermore, allow users to write their own agent backstories / descriptions.
 * The back end logic for AI orchestration could be implemented in LangGraph, providing a neat node+edge-based agent communication paradigm, and allowing for easy extensibility with Tool Use. 
 * Deploy the back end to a serverless function such as AWS Lambda, gated behind an AWS API Gateway, such that the web app could be accessed without needing a locally running instance of the server. This would require only light refactoring of the service logic, since it was designed to be fully stateless. The web UI could be deployed by vending its web asset bundle via a simple AWS S3 bucket + Cloudfront CDN configuration.
+* Allow for infinite conversation dialog turn length: instead of passing the entire conversation history in the CHAI API, only pass the most recent X number of dialog turns, such that the context window is never reached. To do this in such a way that characters don't "forget" about dialog turns outside their context window, prompt compression could be done via recursive summarization. 
+
+## Appendix
+### notes on design decisions
+* The Conversation state is held fully in the request / response schema between the back end and front end. I chose this paradigm for its simplicity and elegance, as despite the fact that it can grow indefinitely, the reality is that these requests / responses never grow to such a length that it is problematic from a web performance standpoint. 
