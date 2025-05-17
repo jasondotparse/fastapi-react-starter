@@ -14,16 +14,6 @@ from app.logger import setup_logger
 
 # Load environment variables and setup logger
 load_dotenv()
-logger = setup_logger("fastapi")
-
-
-def get_db():
-    """Provide a database session."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 def create_app() -> FastAPI:
@@ -42,12 +32,11 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Static file serving (if UI is enabled)
-    if serve_ui:
-        static_dir = "app/frontend/build/static"
-        if not os.path.exists(static_dir):
-            raise FileNotFoundError(f"Static directory '{static_dir}' does not exist.")
-        app.mount("/static", StaticFiles(directory=static_dir), name="static")
+    # Static file serving
+    static_dir = "app/frontend/build/static"
+    if not os.path.exists(static_dir):
+        raise FileNotFoundError(f"Static directory '{static_dir}' does not exist.")
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
     # Signal handlers for graceful shutdown
     signal.signal(signal.SIGINT, signal_handler)
@@ -87,12 +76,7 @@ def create_app() -> FastAPI:
 
     @app.get("/")
     def serve_root():
-        """
-        Serve the React UI or a default message based on the `serve_ui` flag.
-        """
-        if serve_ui:
-            return FileResponse("app/frontend/build/index.html")
-        return {"message": "FastAPI User Manager API is running. UI is disabled."}
+        return FileResponse("app/frontend/build/index.html")
 
     return app
 

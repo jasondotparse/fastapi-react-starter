@@ -1,214 +1,132 @@
-# FastAPI React Starter Project
+# Application overview of CHAI Agent Playground
+This full stack web app is a simple playground in which a user can have a conversation with one or more CHAI characters. The user can choose to participate in the conversation or simply let the AI bot(s) chat amongst themselves. The user remains in control of the dialog turn progression and can interject at any time.
 
-**FastAPI React Starter Project** is a boilerplate repository for building full-stack web applications using **FastAPI** as the backend framework and **React** as the frontend framework. This project is designed to provide developers with a starting point for modern web application development, supporting separate or unified backend and frontend deployments.
+## Application high level architecture:
+### Front end 
+Web UI: React.js based Typescript front end. It displays the chat history of the conversation, including all characters who have participated in the conversation, as well as a simple text field where the user can (optionally) add a <DialogTurn>, as well as a "Continue" button which, under the hood, invokes the back end POST /continueConversation API. The job of the front end is incredibly simple: Display the Conversation dialog turns, and provide an interface through which the user of the app can add DialogTurns to the conversation.
 
-## Why This Project Is Important
+### Back end
+Fully stateless FastAPI-based python server. It exposes 2 endpoints: 
+1. initializeCharacters: This API is invoked at the start of a conversation, to generate a cast of AI agents which will List<Participant> (see section "data model" below) in the conversation.
+2. continueConversation: At a high level, this simply takes in a <Conversation> (see section "data model" below) and returns an updated <Conversation> containing additional <DialogTurns> that encode the AI's response to the most recent <DialogTurn>. In this way, application state is held in the requests themselves, allowing the back end to be fully stateless. When a Conversation is sent from the back end to the front end, the front end can reply with an updated <Conversation> containing additional dialog turns, if the user chose to add a comment to the ongoing conversation. See section "Conversation flow" below.
 
-- **Quick Start**: Offers a ready-to-use structure for full-stack projects, reducing setup time.
-- **Flexibility**: Allows running the backend and frontend separately during development or as a single app in production.
-- **Scalability**: Built with modularity and best practices to make it easy to extend and scale.
-- **Developer-Friendly**: Includes features like CORS support, environment-based configuration, and clear instructions for deployment.
+This web app was forked from the fastapi-react-starter github package to reduce boilerplate setup.
 
----
+## Data model 
+<Conversation>
+{
+  participants: List<Participant>,
+  dialogTurns: List<DialogTurn>
+}
 
-## Features
+<Participant>
+{
+  type: String, // Enum: "HUMAN" or "AI",
+  backstory?: String, // if not present (AKA, this is the first dialog turn), BE will generate it using LLM call
+  name?: String, // if not present (AKA, this is the first dialog turn), BE will generate it using LLM call
+}
 
-- **Backend**: FastAPI-powered REST API.
-- **Frontend**: React app with Bootstrap for styling.
-- **CORS Support**: Preconfigured for seamless backend-frontend communication.
-- **Environment Variables**: `.env` support for flexible configuration.
-- **Unified Deployment**: Option to serve the React app directly from FastAPI.
+<DialogTurn>
+{
+  participant: String, // must be one of the participant names in the conversation
+  content: String // what was said by the participant in this particular dialog turn
+}
 
----
-
-## How to Run the Project
-
-### Prerequisites
-
-1. **Backend Requirements**:
-   - Python (3.9 or higher)
-   - Virtual environment setup (optional but recommended)
-
-2. **Frontend Requirements**:
-   - Node.js (16.x or higher)
-   - npm or Yarn package manager
-
-### Running the Backend (FastAPI) Separately
-
-1. **Clone the Repository**
-
-    ```bash
-    git clone https://github.com/naderzare/fastapi-react-starter.git
-    cd fastapi-react-starter
-    ```
-
-2. **Create and Activate a Python Virtual Environment**
-
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. **Install Python Dependencies**
-   
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-4. **Run the FastAPI Backend**
-
-    ```bash
-    python -m uvicorn app.main:app --reload
-    ```
-
-5. **Access the Backend**
-
-   - Open `http://127.0.0.1:8000` in your browser.
-   - API documentation is available at `http://127.0.0.1:8000/docs`.
-
----
-
-### Running the Frontend (React) Separately
-
-1. **Navigate to the `frontend` Directory**
-
-    ```bash
-    cd app/frontend
-    ```
-
-2. **Install Node.js Dependencies**
-
-    ```bash
-    npm install
-    ```
-
-3. **Run the React Development Server**
-
-    ```bash
-    npm start
-    ```
-
-4. **Access the Frontend**
-
-   - Open `http://localhost:3000` in your browser.
-
----
-
-### Running the Backend and Frontend Together
-
-To serve the React app through FastAPI in production:
-
-1. **Build the React App**
-
-    ```bash
-    cd app/frontend
-    npm run build
-    ```
-
-   This will generate a `build` folder in the `frontend` directory.
-
-2. **Update the `.env` File**
-   - Open the `.env` file and set:
-     ```env
-     SERVE_UI=true
-     ```
-
-3. **Run the FastAPI App**
-
-   ```bash
-   python -m uvicorn app.main:app --reload
-   ```
-
-4. **Access the Unified App**
-   - Open `http://127.0.0.1:8000` in your browser to see the React frontend served by FastAPI.
-
----
-
-## Project Structure
-
+## Back end API schema
+### POST /initializeCharacters
+input:
 ```
-fastapi-react-starter/
-├── app/
-│   ├── main.py         # FastAPI app definition
-│   ├── database.py     # Database configuration
-│   ├── models.py       # SQLAlchemy models
-│   ├── schemas.py      # Pydantic schemas
-│   ├── logger.py       # Custom logger setup
-│   ├── frontend/       # React app
-│   │   ├── build/      # React build files
-│   │   ├── src/        # React source code
-│   └── __init__.py
-├── requirements.txt    # Python dependencies
-├── .env                # Environment variables
-└── README.md           # Project documentation
+{
+  count: Int // the number of AI characters to generate to participate in the conversation
+  userEngagementEnabled: Boolean // indicates whether the user will be talking in the conversation, or if this is purely going to be a set of AI agents talking amongst themselves. 
+}
+```
+output:
+```
+{
+  participants: List<Participant>
+}
+```
+### POST /continueConversation
+input:
+```
+{
+  conversation: <Conversation>
+}
+```
+output:
+```
+{
+  conversation: <Conversation>
+}
 ```
 
----
+## Data flow
+Note: see the sequence diagrams in /documentation/sequence diagrams for a visual overview of several different conversation scenarios. The basic evolution of the <Conversation> is laid out below. 
+1. web UI initializes the conversation by sending POST /initializeCharacters, providing the # of characters to initialize and a flag to indicate if the user wants to participate in the conversation.
+2. back end generates the list of characters (names and backstories) and responds with List<Participant>. At this point, the client has all it needs to proceed to continue the conversation
+3. The user optionally provides an input. If they do so, the front end adds a new <DialogTurn> to continueConversation. Then, the web UI calls POST /continueConversation, providing the (possibly now longer) <Conversation>.
+4. The back end chooses a character to speak next, and then generates a new <DialogTurn>. It adds this to the Conversation and sends it back to the UI.
+* Steps 3 & 4 repeat until the user decides to end the session, or the prompt context window limit is reached. 
 
-## API Endpoints
+## LLM interface 
+The back end leverages the publically accessible API from CHAI. The following describes a POST endpoint exposing a stateless API to access one of our models via a chat interface.
 
-### Backend API
+### LLM API data model and usage example
+> POST
+http://guanaco-submitter.guanaco-backend.k2.chaiverse.com/endpoints/onsite/chat
 
-1. **Add a User**
-   - **POST** `/user/add`
-   - Request Body:
-     ```json
-     {
-       "username": "john_doe",
-       "age": 30
-     }
-     ```
-   - Response:
-     ```json
-     {
-       "id": 1,
-       "message": "User created successfully"
-     }
-     ```
+Headers:
+Authorization: "Bearer CR_14d43f2bf78b4b0590c2a8b87f354746"
 
-2. **Get All Users**
-   - **GET** `/user/all`
-   - Response:
-     ```json
-     [
-       {
-         "id": 1,
-         "username": "john_doe",
-         "age": 30
-       }
-     ]
-     ```
+JSON BODY:
+{
+    "memory": str,
+    "prompt": str,
+    "bot_name": str,
+    "user_name": str,
+    "chat_history": List[dict[str, str]]
+}
 
----
+Parameter explanations:
+- memory: ** deprecated **
+- prompt: This is the bot's prompt, which is truncated
+          as the conversation progresses.
+- bot_name: This is the name assigned to the character
+            the model is acting as.
+- user_name: This is the name assigned to agent interacting
+             with the model.
+- chat_history: This is a list of messages representing the
+                conversation history. The format of each
+                message is
+                {
+                    "sender": "sender_name",
+                    "message": "some_string"
+                }.
 
-## Contributing
+Example payload:
+{
+    "memory": "",
+    "prompt": "An engaging conversation with Bot.",
+    "bot_name": "Bot",
+    "user_name": "User",
+    "chat_history":
+        [
+          {"sender": "Bot", "message": "Hi there"},
+          {"sender": "User", "message": "Hey Bot!"}
+        ]
+}
+>
+### LLM API key
+Should be found in the .env file at the root of this project, under the name `CHAI_API_BEARER_TOKEN`. Example:
+.env
+```
+CHAI_API_BEARER_TOKEN="Bearer abc123xyz456"
+```
 
-We welcome contributions! Please follow these steps:
 
-1. Fork the repository.
-2. Create a new branch for your feature or bug fix.
-3. Commit your changes and push the branch.
-4. Open a pull request for review.
-
----
-
-## License
-
-This project is licensed under the MIT License. See the `LICENSE` file for details.
-
----
-
-## Contact
-
-If you have any questions or feedback, feel free to reach out or open an issue in the repository.
-
----
-
-## Keywords
-
-- FastAPI React Starter
-- Full-stack web development
-- FastAPI boilerplate
-- React frontend with FastAPI
-- Modern web app example
-
+## Candiates for additional improvements
+* Allow the customer to edit any individiual dialog turn, not just add new ones to the end of the Conversation.
+* Back story customization: Instead of hard coding agents to be fantasy characters, allow the user to provide the "setting" in which the characters are generated, or furthermore, allow users to write their own agent backstories / descriptions.
+* The back end logic for AI orchestration could be implemented in LangGraph, providing a neat node+edge-based agent communication paradigm, and allowing for easy extensibility with Tool Use. 
+* Deploy the back end to a serverless function such as AWS Lambda, gated behind an AWS API Gateway, such that the web app could be accessed without needing a locally running instance of the server. This would require only light refactoring of the service logic, since it was designed to be fully stateless. The web UI could be deployed by vending its web asset bundle via a simple AWS S3 bucket + Cloudfront CDN configuration.
