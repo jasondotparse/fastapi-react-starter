@@ -54,7 +54,7 @@ def create_app() -> FastAPI:
             logger.error(f"Error creating user: {str(e)}")
             raise HTTPException(status_code=500, detail="Error creating user")
 
-    @app.get("/continueConversation")
+    @app.post("/continueConversation")
     def continue_conversation(conversation: Conversation) -> Conversation:
         """
           At a high level, this simply takes in a <Conversation> (see section "data model" below) and returns an 
