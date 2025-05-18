@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { agentPlaygroundBackendClient } from '../services/AgentPlaygroundBackendClient';
 import { Participant } from '../types/models';
 import './ConversationInitializer.css';
@@ -11,8 +11,23 @@ const ConversationInitializer: React.FC<ConversationInitializerProps> = ({ onIni
   const [characterCount, setCharacterCount] = useState<number>(2);
   const [userEngagementEnabled, setUserEngagementEnabled] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
+  
+  // Calculate the maximum AI characters based on whether user participation is enabled
+  const maxAICharacters = userEngagementEnabled ? 4 : 5; // 5 total - 1 user = 4 AI (if user enabled)
 
-  const incrementCount = () => setCharacterCount(prev => prev + 1);
+  // Update character count if it exceeds the new maximum after toggling user participation
+  useEffect(() => {
+    if (characterCount > maxAICharacters) {
+      setCharacterCount(maxAICharacters);
+    }
+  }, [userEngagementEnabled, maxAICharacters]);
+
+  const incrementCount = () => {
+    if (characterCount < maxAICharacters) {
+      setCharacterCount(prev => prev + 1);
+    }
+  };
+  
   const decrementCount = () => setCharacterCount(prev => Math.max(1, prev - 1));
 
   const handleInitialize = async () => {
@@ -40,8 +55,13 @@ const ConversationInitializer: React.FC<ConversationInitializerProps> = ({ onIni
         <div className="character-count-control">
           <button onClick={decrementCount} disabled={characterCount <= 1 || loading}>-</button>
           <span>{characterCount}</span>
-          <button onClick={incrementCount} disabled={loading}>+</button>
+          <button onClick={incrementCount} disabled={loading || characterCount >= maxAICharacters}>+</button>
         </div>
+        {characterCount >= maxAICharacters && (
+          <div className="max-characters-warning">
+            Maximum of 5 participants reached (including {userEngagementEnabled ? "you and " : ""}AI characters).
+          </div>
+        )}
       </div>
       
       <div className="form-group">

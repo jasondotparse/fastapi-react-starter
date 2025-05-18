@@ -1,6 +1,7 @@
 import json
 import logging
 import asyncio
+import re
 from typing import List, Dict, Tuple
 from app.schemas import ContinueConversationRequest, Participant, Conversation, InitalizeCharactersRequest, DialogTurn
 from app.utils.env_validator import validate_chai_api_key
@@ -14,15 +15,10 @@ class CharacterSandboxService:
     """
     
     def __init__(self):
-        """
-        Initialize the service and validate the CHAI API key.
-        """
-        # Validate that the CHAI API key is present
         self.api_key = validate_chai_api_key()
-        # Initialize the CHAI API client
         self.chai_client = CHAIAPIClient()
-        self.REQUEST_STAGGER_TIME_SECONDS = 4
-        logger.info("CharacterSandboxService initialized with valid API key and CHAI API client")
+        self.REQUEST_STAGGER_TIME_SECONDS = 5
+        self.generated_character_names: List[str] = []
     
     async def _generate_character(self, index: int) -> Tuple[Participant, int]:
         """
@@ -41,17 +37,18 @@ class CharacterSandboxService:
               
             # Generate character name
             response_from_charAI_link1 = await self.chai_client.invoke_llm(
-                prompt="An engaging texting conversation between Jason and Brian, an author and his cowriter. Jason is working on a new fantasy novel, and he comes to Brian when he has writer's block.",
+                prompt="An engaging texting conversation between Jason and Brian, an author and his cowriter. Jason is working on a new fantasy novel, and he comes to Brian when he needs help coming up with character names.",
                 character_1_name="Brian",
                 character_2_name="Jason",
                 chat_history=[
                   {"sender": "Jason", "message": "Hey Brian, I need your help coming up with some characters for my new novel. Can you make up new character's name? Just the name, please."},
-                  {"sender": "Brian", "message": "Eamon Blackwood."},
+                  {"sender": "Brian", "message": self.generated_character_names[-1] if self.generated_character_names else "Seraphina Vale."}, # hack to prevent the same name from being generated twice (LLM temperature/top_p is not a parameter which can be set via API)
                   {"sender": "Jason", "message": "Perfect! One more... just the first name and last name, please."},
                 ]
             )
 
-            character_name = response_from_charAI_link1.split(".")[0]
+            character_name = re.split(r'\.|\*|\*\*Jason:|\*\*<\|im_start\|user', response_from_charAI_link1)[0] # Extract the name before any additional text from the response.
+            self.generated_character_names.append(character_name)
 
             await asyncio.sleep(self.REQUEST_STAGGER_TIME_SECONDS * 2)
 
@@ -98,8 +95,8 @@ class CharacterSandboxService:
             participants.append(
                 Participant(
                     type="HUMAN",
-                    name="User",
-                    backstory="A curious human exploring conversations with AI characters."
+                    name="Unknown",
+                    backstory="A curious human exploring in a fantasy realm."
                 )
             )
         
