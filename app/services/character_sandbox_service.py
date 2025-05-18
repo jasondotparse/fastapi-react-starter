@@ -1,8 +1,7 @@
-import json
 import logging
 import asyncio
 import re
-from typing import List, Dict, Tuple
+from typing import List, Tuple
 from app.schemas import ContinueConversationRequest, Participant, Conversation, InitalizeCharactersRequest, DialogTurn
 from app.utils.env_validator import validate_chai_api_key
 from app.clients.chai_api_client import CHAIAPIClient
@@ -20,9 +19,42 @@ class CharacterSandboxService:
         self.REQUEST_STAGGER_TIME_SECONDS = 5
         self.generated_character_names: List[str] = []
     
+    def post_process_character_name_generation_response(self, response: str) -> str:
+        """
+        Process the raw response from the CHAI API for character name generation.
+        
+        Args:
+            response: The raw response from the CHAI API
+            
+        Returns:
+            The extracted character name
+        """
+        character_name = re.split(r'\.|\*|Jason|<| ', response)[0]  # Extract the name before any additional text
+        self.generated_character_names.append(character_name)
+        return character_name
+    
+    def post_process_continue_conversation_response(self, response: str) -> str:
+        """
+        Process the raw response from the CHAI API for conversation continuation.
+        
+        Args:
+            response: The raw response from the CHAI API
+            
+        Returns:
+            The processed response with any content after 'USER' removed
+        """
+        if "USER" in response:
+            response = re.split('USER', response)[0]
+        if ":" in response:
+            response = re.split(':', response)[0]
+        return response
+    
     async def _generate_character(self, index: int) -> Tuple[Participant, int]:
         """
         Generate a complete character (name and backstory) using the CHAI API.
+        The API uses a staggered approach to avoid 429 errors due to rate limits.
+        The stagger time was set to 5 seconds, but this can be adjusted if we can remove the throttling
+        which has apparently been applied to this API key.
         
         Args:
             index: The index of the character being generated
@@ -32,7 +64,6 @@ class CharacterSandboxService:
         """
         try:
             if index > 0:
-              # Introduce a staggered delay to avoid rate limiting
               await asyncio.sleep(self.REQUEST_STAGGER_TIME_SECONDS * index)
               
             # Generate character name
@@ -42,13 +73,12 @@ class CharacterSandboxService:
                 character_2_name="Jason",
                 chat_history=[
                   {"sender": "Jason", "message": "Hey Brian, I need your help coming up with some characters for my new novel. Can you make up new character's name? Just the name, please."},
-                  {"sender": "Brian", "message": self.generated_character_names[-1] if self.generated_character_names else "Seraphina Vale."}, # hack to prevent the same name from being generated twice (LLM temperature/top_p is not a parameter which can be set via API)
+                  {"sender": "Brian", "message": self.generated_character_names[-1] if self.generated_character_names else "Seraphina Vale."}, # hack to prevent the same name from being generated twice (LLM temperature/top_p is not a parameter which can be set via API). This amounts to a RANDOM_SEED in the LLM input.
                   {"sender": "Jason", "message": "Perfect! One more... just the first name and last name, please."},
                 ]
             )
 
-            character_name = re.split(r'\.|\*|\*\*Jason:|\*\*<\|im_start\|user', response_from_charAI_link1)[0] # Extract the name before any additional text from the response.
-            self.generated_character_names.append(character_name)
+            character_name = self.post_process_character_name_generation_response(response_from_charAI_link1)
 
             await asyncio.sleep(self.REQUEST_STAGGER_TIME_SECONDS * 2)
 
@@ -126,6 +156,7 @@ class CharacterSandboxService:
         Logic:
         1. If there are dialog turns, find a character who isn't the most recent speaker
         2. If there are no dialog turns, choose a random AI character
+        3. If there are characters which haven't been mentioned in the last 5 dialog turns, choose one of them at random
         
         Args:
             conversation: The current conversation state
@@ -133,14 +164,16 @@ class CharacterSandboxService:
         Returns:
             The participant who should speak next
         """
+        import random
+        
         ai_participants = [p for p in conversation.participants if p.type == "AI"]
         
         if not ai_participants:
             logger.error("No AI participants found in the conversation")
             raise ValueError("Unable to choose next speaker; no AI participants found in the conversation")
         
+        # If there are no dialog turns, choose a random AI character
         if not conversation.dialogTurns:
-            import random
             return random.choice(ai_participants)
         
         most_recent_turn = conversation.dialogTurns[-1]
@@ -160,17 +193,37 @@ class CharacterSandboxService:
         
         # If any characters were mentioned, choose one of them
         if mentioned_participants:
-            import random
             return random.choice(mentioned_participants)
         
-        # Otherwise, choose a random AI character who isn't the most recent speaker
+        # Check for characters not mentioned in the last 5 dialog turns
+        # Get the last 5 dialog turns (or fewer if there aren't 5)
+        recent_turns = conversation.dialogTurns[-5:] if len(conversation.dialogTurns) >= 5 else conversation.dialogTurns
+        
+        # Find all characters mentioned in these turns
+        recently_mentioned_names = set()
+        for turn in recent_turns:
+            # Add the speaker
+            recently_mentioned_names.add(turn.participant)
+            
+            # Check for mentions of other characters in the content
+            for participant in ai_participants:
+                if participant.name in turn.content:
+                    recently_mentioned_names.add(participant.name)
+        
+        # Find characters who haven't been mentioned recently
+        not_recently_mentioned = [p for p in ai_participants if p.name not in recently_mentioned_names]
+        
+        # If there are characters who haven't been mentioned recently, choose one
+        if not_recently_mentioned:
+            return random.choice(not_recently_mentioned)
+        
+        # otherwise, choose a random AI character who isn't the most recent speaker
         available_speakers = [p for p in ai_participants if p.name != most_recent_speaker_name]
         
         # If all AI characters have spoken and there's only one, we have to reuse them
         if not available_speakers and ai_participants:
             return ai_participants[0]
             
-        import random
         return random.choice(available_speakers) if available_speakers else random.choice(ai_participants)
     
     def _format_chat_history(self, conversation: Conversation) -> list:
@@ -218,12 +271,12 @@ class CharacterSandboxService:
             backstories = []
             for p in ai_participants:
                 # Take just the first sentence of each backstory to keep the prompt short
-                backstory = p.backstory.split('.')[0] + '.' if p.backstory else ''
+                backstory = p.backstory if p.backstory else ''
                 backstories.append(f"{p.name}: {backstory}")
             
             backstories_str = " ".join(backstories)
             
-            return f"An engaging conversation between {characters_str}. {backstories_str}"
+            return f"A dialogue amongst fantasy characters in a magical realm. {characters_str}. {backstories_str}"
     
     def _get_most_recent_speaker(self, conversation: Conversation) -> str:        
         return conversation.dialogTurns[-1].participant
@@ -231,7 +284,7 @@ class CharacterSandboxService:
     async def continue_conversation(self, request: ContinueConversationRequest) -> Conversation:
         conversation = request.conversation
         
-        # 1. Determine who should speak next
+        # 1. Determine who should speak next. This will end up as the character_1_name in the CHAI API client request.
         next_speaker = self._determine_next_speaker(conversation)
         
         # 2. Format the chat history for the CHAI API
@@ -240,7 +293,7 @@ class CharacterSandboxService:
         # If there are no dialog turns, we need to bootstrap the conversation
         if not chat_history:
             # Create a generic greeting from the first speaker
-            greeting = f"Hello! I'm {next_speaker.name}."
+            greeting = f"Hello. I am {next_speaker.name}."
             
             # Add it to the chat history
             chat_history.append({
@@ -269,18 +322,20 @@ class CharacterSandboxService:
         logger.info(f"Chat history: {chat_history}")
         
         # 5. Call the CHAI API to generate a response
-        response_from_charAI_link = await self.chai_client.invoke_llm(
+        response_from_charAI = await self.chai_client.invoke_llm(
             prompt=prompt,
             character_1_name=next_speaker.name, # this should be the participant we want to speak next
             character_2_name=most_recent_speaker, # this should be the last participant in the chat history
             chat_history=chat_history
         )
+
+        response_from_charAI = self.post_process_continue_conversation_response(response_from_charAI)
         
         # 6. Add the response to the conversation
         conversation.dialogTurns.append(
             DialogTurn(
                 participant=next_speaker.name,
-                content=response_from_charAI_link
+                content=response_from_charAI
             )
         )
         

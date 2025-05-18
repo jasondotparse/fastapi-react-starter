@@ -38,7 +38,7 @@ class CHAIAPIClient:
                 chat_history=formatted_chat_history
             )
 
-            logger.info(f"\nRequest data for CHAI API: {request_data.model_dump()}")
+            logger.info(f"\n\nRequest data for CHAI API: {request_data.model_dump()}\n")
 
             async with httpx.AsyncClient() as client:
                 response = await client.post(
@@ -49,7 +49,7 @@ class CHAIAPIClient:
                 )
                 response.raise_for_status()
                 data = response.json()
-                logger.info(f"Response from CHAI API: {data['model_output'].strip()}")
+                logger.info(f"\nResponse from CHAI API: {data['model_output'].strip()}\n\n")
                 return data["model_output"].strip()
             
         except Exception as e:

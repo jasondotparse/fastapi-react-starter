@@ -22,6 +22,22 @@ const ContinueConversation: React.FC<ContinueConversationProps> = ({
   // Find USER participants
   const userParticipants = conversation.participants.filter(p => p.type === "HUMAN");
   
+  // Determine if this is a 1-on-1 conversation (1 user and 1 AI)
+  const isOneOnOneConversation = () => {
+    const aiParticipants = conversation.participants.filter(p => p.type === "AI");
+    return userParticipants.length === 1 && aiParticipants.length === 1;
+  };
+  
+  // Determine if the continue button should be disabled
+  const isContinueButtonDisabled = () => {
+    // In 1-on-1 conversations, require user input
+    if (isOneOnOneConversation() && !userInput.trim()) {
+      return true;
+    }
+    // Always disable during loading
+    return loading;
+  };
+  
   // Handle continue button click
   const handleContinue = async () => {
     setLoading(true);
@@ -79,9 +95,16 @@ const ContinueConversation: React.FC<ContinueConversationProps> = ({
       
       {error && <div className="error-message">{error}</div>}
       
+      {isOneOnOneConversation() && !userInput.trim() && (
+        <div className="input-required-message">
+          Please type a message to continue the conversation.
+        </div>
+      )}
+      
       <button 
         className="continue-button"
         onClick={handleContinue}
+        disabled={isContinueButtonDisabled()}
       >
         {loading ? 'Processing...' : 'Continue Conversation'}
       </button>

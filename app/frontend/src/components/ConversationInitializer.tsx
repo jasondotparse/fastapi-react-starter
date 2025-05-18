@@ -21,6 +21,13 @@ const ConversationInitializer: React.FC<ConversationInitializerProps> = ({ onIni
       setCharacterCount(maxAICharacters);
     }
   }, [userEngagementEnabled, maxAICharacters]);
+  
+  // Enforce user participation when there's only 1 AI character
+  useEffect(() => {
+    if (characterCount === 1 && !userEngagementEnabled) {
+      setUserEngagementEnabled(true);
+    }
+  }, [characterCount, userEngagementEnabled]);
 
   const incrementCount = () => {
     if (characterCount < maxAICharacters) {
@@ -70,11 +77,25 @@ const ConversationInitializer: React.FC<ConversationInitializerProps> = ({ onIni
             type="checkbox"
             checked={userEngagementEnabled}
             onChange={e => setUserEngagementEnabled(e.target.checked)}
-            disabled={loading}
+            disabled={loading || characterCount === 1}
           />
           Enable User Participation
         </label>
+        {characterCount === 1 && (
+          <div className="user-engagement-note">
+            User participation is required with only 1 AI character.
+          </div>
+        )}
       </div>
+      
+      {loading && (
+        <div className="loading-container">
+          <div className="spinner"></div>
+          <div className="loading-message">
+            generating character names and backstories...
+          </div>
+        </div>
+      )}
       
       <button 
         className="start-button"
