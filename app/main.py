@@ -6,19 +6,23 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from app.schemas import InitalizeCharactersRequest, Participant, Conversation
+from app.services.character_sandbox_service import CharacterSandboxService
 from dotenv import load_dotenv
 import logging
 from typing import List
 
 # Load environment variables and setup logger
 load_dotenv()
-
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI app."""
 
-    app = FastAPI(title="FastAPI User Manager")
+    app = FastAPI(title="CHAI Agent Playground")
+    
+    # Initialize the character sandbox service
+    character_sandbox_service = CharacterSandboxService()
 
     # CORS Middleware
     app.add_middleware(
@@ -41,18 +45,15 @@ def create_app() -> FastAPI:
 
     # Routes
     @app.post("/initializeCharacters")
-    def initialize_characters(initalizeCharactersRequest: InitalizeCharactersRequest) -> List[Participant]:
+    def initialize_characters(request: InitalizeCharactersRequest) -> List[Participant]:
         """
-          This API is invoked at the start of a conversation, to generate a cast of AI agents which will 
-          List<Participant> (see section "data model" below) in the conversation.
+          This API is invoked at the start of a conversation, to generate a cast of AI agents. 
         """
         try:
-            ## todo: implement this
-            participantList = []
-            return participantList
+            return character_sandbox_service.initialize_characters(request)
         except Exception as e:
-            logger.error(f"Error creating user: {str(e)}")
-            raise HTTPException(status_code=500, detail="Error creating user")
+            logger.error(f"Error initializing characters: {str(e)}")
+            raise HTTPException(status_code=500, detail="Error initializing characters")
 
     @app.post("/continueConversation")
     def continue_conversation(conversation: Conversation) -> Conversation:
@@ -65,12 +66,10 @@ def create_app() -> FastAPI:
           See readme.md section "Conversation flow" for more.
         """
         try:
-            ## todo: implement this
-            updated_conversation = {}
-            return updated_conversation
+            return character_sandbox_service.continue_conversation(conversation)
         except Exception as e:
-            logger.error(f"Error retrieving users: {str(e)}")
-            raise HTTPException(status_code=500, detail="Error retrieving users")
+            logger.error(f"Error continuing conversation: {str(e)}")
+            raise HTTPException(status_code=500, detail="Error continuing conversation")
 
     @app.get("/")
     def serve_root():
