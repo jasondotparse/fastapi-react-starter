@@ -38,6 +38,8 @@ class CHAIAPIClient:
                 chat_history=formatted_chat_history
             )
 
+            logger.info(f"Request data for CHAI API: {request_data.model_dump()}")
+
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     self.base_url,

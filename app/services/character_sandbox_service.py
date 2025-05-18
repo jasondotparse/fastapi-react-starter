@@ -122,38 +122,169 @@ class CharacterSandboxService:
         logger.info(f"service initialize_characters returning {len(participants)} participants")
         return participants
     
-    async def continue_conversation(self, request: ContinueConversationRequest) -> Conversation:
-        # todo: update this to use the correct arguments in the call to invoke_llm by referencing the conversation state thus far, and 
-        # whether or not the user has added a comment to the conversation
-        conversation = request.conversation
-        chat_history_thus_far = []
+    def _determine_next_speaker(self, conversation: Conversation) -> Participant:
+        """
+        Determine which character should speak next in the conversation.
+        
+        Logic:
+        1. If there are dialog turns, find a character who isn't the most recent speaker
+        2. If there are no dialog turns, choose a random AI character
+        
+        Args:
+            conversation: The current conversation state
+            
+        Returns:
+            The participant who should speak next
+        """
+        ai_participants = [p for p in conversation.participants if p.type == "AI"]
+        
+        if not ai_participants:
+            logger.error("No AI participants found in the conversation")
+            raise ValueError("Unable to choose next speaker; no AI participants found in the conversation")
+        
+        if not conversation.dialogTurns:
+            import random
+            return random.choice(ai_participants)
+        
+        most_recent_turn = conversation.dialogTurns[-1]
+        most_recent_speaker_name = most_recent_turn.participant
+        
+        # Check if the most recent message mentions or addresses another character
+        # This is a simple implementation - just check if any character's name is in the message
+        mentioned_participants = []
+        for participant in ai_participants:
+            # Skip the most recent speaker
+            if participant.name == most_recent_speaker_name:
+                continue
+                
+            # Check if this participant's name is mentioned in the most recent message
+            if participant.name in most_recent_turn.content:
+                mentioned_participants.append(participant)
+        
+        # If any characters were mentioned, choose one of them
+        if mentioned_participants:
+            import random
+            return random.choice(mentioned_participants)
+        
+        # Otherwise, choose a random AI character who isn't the most recent speaker
+        available_speakers = [p for p in ai_participants if p.name != most_recent_speaker_name]
+        
+        # If all AI characters have spoken and there's only one, we have to reuse them
+        if not available_speakers and ai_participants:
+            return ai_participants[0]
+            
+        import random
+        return random.choice(available_speakers) if available_speakers else random.choice(ai_participants)
+    
+    def _format_chat_history(self, conversation: Conversation) -> list:
+        """
+        Format the conversation's dialog turns into the format expected by the CHAI API.
+        
+        Args:
+            conversation: The current conversation state
+            
+        Returns:
+            A list of dictionaries with 'sender' and 'message' keys
+        """
+        chat_history = []
+        
         for turn in conversation.dialogTurns:
-            chat_history_thus_far.append(
-                {
-                    "sender": turn.participant,
-                    "message": turn.content
-                }
+            chat_history.append({
+                "sender": turn.participant,
+                "message": turn.content
+            })
+            
+        return chat_history
+    
+    def _generate_prompt(self, conversation: Conversation) -> str:
+        """
+        Generate a prompt for the CHAI API based on the participants in the conversation.
+        
+        Args:
+            conversation: The current conversation state
+            
+        Returns:
+            A string prompt describing the conversation context
+        """
+        ai_participants = [p for p in conversation.participants if p.type == "AI"]
+        
+        # Create a basic prompt describing the conversation
+        if len(ai_participants) == 1:
+            # One-on-one conversation
+            return f"An engaging conversation between {ai_participants[0].name} and a user."
+        else:
+            # Multi-character conversation
+            character_names = [p.name for p in ai_participants]
+            characters_str = ", ".join(character_names[:-1]) + " and " + character_names[-1] if len(character_names) > 1 else character_names[0]
+            
+            # Add backstories to provide context
+            backstories = []
+            for p in ai_participants:
+                # Take just the first sentence of each backstory to keep the prompt short
+                backstory = p.backstory.split('.')[0] + '.' if p.backstory else ''
+                backstories.append(f"{p.name}: {backstory}")
+            
+            backstories_str = " ".join(backstories)
+            
+            return f"An engaging conversation between {characters_str}. {backstories_str}"
+    
+    def _get_most_recent_speaker(self, conversation: Conversation) -> str:        
+        return conversation.dialogTurns[-1].participant
+    
+    async def continue_conversation(self, request: ContinueConversationRequest) -> Conversation:
+        conversation = request.conversation
+        
+        # 1. Determine who should speak next
+        next_speaker = self._determine_next_speaker(conversation)
+        
+        # 2. Format the chat history for the CHAI API
+        chat_history = self._format_chat_history(conversation)
+        
+        # If there are no dialog turns, we need to bootstrap the conversation
+        if not chat_history:
+            # Create a generic greeting from the first speaker
+            greeting = f"Hello! I'm {next_speaker.name}."
+            
+            # Add it to the chat history
+            chat_history.append({
+                "sender": next_speaker.name,
+                "message": greeting
+            })
+            
+            # Also add it to the conversation as the first dialog turn
+            conversation.dialogTurns.append(
+                DialogTurn(
+                    participant=next_speaker.name,
+                    content=greeting
+                )
             )
-        if len(chat_history_thus_far) == 0:
-            chat_history_thus_far.append(
-                {
-                    "sender": "Jason",
-                    "message": "Why, hello there!"
-                }
-            )
-        logger.info(f"chat_history_thus_far {chat_history_thus_far}")
-        most_recent_turn_character_to_speak = "Jason"
-        next_character_to_speak = "Steve"
+            
+            # Return the conversation with the initial greeting
+            return conversation
+        
+        # 3. Generate an appropriate prompt
+        prompt = self._generate_prompt(conversation)
+        
+        # 4. Determine the most recent speaker (for CHAI API parameters)
+        most_recent_speaker = self._get_most_recent_speaker(conversation)
+        
+        logger.info(f"Continuing conversation with next speaker: {next_speaker.name}")
+        logger.info(f"Chat history: {chat_history}")
+        
+        # 5. Call the CHAI API to generate a response
         response_from_charAI_link = await self.chai_client.invoke_llm(
-              prompt="An engaging texting conversation between 2 fantasy characters, Jason and Steve.",
-              character_1_name=most_recent_turn_character_to_speak,
-              character_2_name=next_character_to_speak,
-              chat_history=chat_history_thus_far
-          )
+            prompt=prompt,
+            character_1_name=next_speaker.name, # this should be the participant we want to speak next
+            character_2_name=most_recent_speaker, # this should be the last participant in the chat history
+            chat_history=chat_history
+        )
+        
+        # 6. Add the response to the conversation
         conversation.dialogTurns.append(
             DialogTurn(
-                participant=most_recent_turn_character_to_speak,
+                participant=next_speaker.name,
                 content=response_from_charAI_link
             )
         )
+        
         return conversation
