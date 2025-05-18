@@ -1,4 +1,4 @@
-import requests
+import httpx
 import logging
 from typing import List, Optional, Dict, Any
 from app.clients.schemas.chai_schemas import ChatMessage, CHAIAPIRequest
@@ -17,7 +17,7 @@ class CHAIAPIClient:
         }
         logger.info("CHAIAPIClient initialized with valid API key")
     
-    def invoke_llm(
+    async def invoke_llm(
         self,
         prompt: str,
         character_1_name: str,
@@ -38,14 +38,16 @@ class CHAIAPIClient:
                 chat_history=formatted_chat_history
             )
 
-            response = requests.post(
-                self.base_url,
-                headers=self.headers,
-                json=request_data.model_dump()
-            )
-            response.raise_for_status()
-            data = response.json()
-            return data["model_output"].strip()
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    self.base_url,
+                    headers=self.headers,
+                    json=request_data.model_dump(),
+                    timeout=60.0  # Increased timeout for LLM API calls
+                )
+                response.raise_for_status()
+                data = response.json()
+                return data["model_output"].strip()
             
         except Exception as e:
             logger.error(f"Error invoking CHAI API: {str(e)}")

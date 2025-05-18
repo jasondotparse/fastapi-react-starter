@@ -45,12 +45,14 @@ def create_app() -> FastAPI:
 
     # Routes
     @app.post("/initializeCharacters")
-    def initialize_characters(request: InitalizeCharactersRequest) -> List[Participant]:
+    async def initialize_characters(request: InitalizeCharactersRequest) -> List[Participant]:
         """
           This API is invoked at the start of a conversation, to generate a cast of AI agents. 
         """
         try:
-            return character_sandbox_service.initialize_characters(request)
+            characters = await character_sandbox_service.initialize_characters(request)
+            logger.info(f"main.py initialize_characters returning.")
+            return characters
         except Exception as e:
             logger.error(f"Error initializing characters: {str(e)}")
             raise HTTPException(status_code=500, detail="Error initializing characters")

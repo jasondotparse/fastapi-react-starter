@@ -6,3 +6,4 @@ sqlalchemy==2.0.37
 aiofiles==24.1.0
 colorama
 requests
+httpx==0.27.0
