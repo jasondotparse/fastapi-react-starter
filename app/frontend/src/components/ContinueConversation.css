@@ -1,0 +1,75 @@
+.continue-conversation {
+  margin-top: 20px;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+.user-input-section {
+  margin-bottom: 15px;
+}
+
+.user-selector {
+  margin-bottom: 10px;
+}
+
+.user-selector label {
+  margin-right: 10px;
+  font-weight: bold;
+}
+
+.user-selector select {
+  padding: 5px;
+  border-radius: 3px;
+  border: 1px solid #ccc;
+}
+
+.input-container {
+  width: 100%;
+}
+
+.input-container textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 10px;
+  border-radius: 3px;
+  border: 1px solid #ccc;
+  resize: vertical;
+}
+
+.continue-button {
+  padding: 8px 16px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.continue-button:hover {
+  background-color: #45a049;
+}
+
+.continue-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #d32f2f;
+  margin-bottom: 10px;
+}
+
+.dialog-turns {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.dialog-turn {
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 5px;
+  background-color: #f0f0f0;
+}

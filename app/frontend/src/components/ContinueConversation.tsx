@@ -1,0 +1,92 @@
+import React, { useState, useEffect } from 'react';
+import { agentPlaygroundBackendClient } from '../services/AgentPlaygroundBackendClient';
+import { Conversation, Participant } from '../types/models';
+import './ContinueConversation.css';
+
+interface ContinueConversationProps {
+  conversation: Conversation;
+  setConversation: React.Dispatch<React.SetStateAction<Conversation | undefined>>;
+}
+
+const ContinueConversation: React.FC<ContinueConversationProps> = ({ 
+  conversation, 
+  setConversation 
+}) => {
+  // State for user input
+  const [userInput, setUserInput] = useState<string>('');
+  // Loading state
+  const [loading, setLoading] = useState<boolean>(false);
+  // Error state
+  const [error, setError] = useState<string | null>(null);
+  
+  // Find USER participants
+  const userParticipants = conversation.participants.filter(p => p.type === "HUMAN");
+  
+  // Handle continue button click
+  const handleContinue = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      let updatedConversation = { ...conversation };
+      
+      // If user input is provided and a user is selected, add it to the conversation
+      if (userInput.trim()) {
+        updatedConversation = {
+          ...conversation,
+          dialogTurns: [
+            ...conversation.dialogTurns,
+            {
+              participant: "USER",
+              content: userInput.trim()
+            }
+          ]
+        };
+      } else {
+        updatedConversation = conversation
+      }
+      
+      // Call the API to continue the conversation
+      const result = await agentPlaygroundBackendClient.continueConversation(updatedConversation);
+      
+      // Update the conversation with the result
+      setConversation(result);
+      
+      // Clear user input
+      setUserInput('');
+    } catch (err) {
+      console.error('Error continuing conversation:', err);
+      setError('Failed to continue conversation. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  return (
+    <div className="continue-conversation">
+      {userParticipants.length > 0 && (
+        <div className="user-input-section">
+          <div className="input-container">
+            <textarea
+              value={userInput}
+              onChange={(e) => setUserInput(e.target.value)}
+              placeholder="Type your message..."
+              disabled={loading}
+            />
+          </div>
+        </div>
+      )}
+      
+      {error && <div className="error-message">{error}</div>}
+      
+      <button 
+        className="continue-button"
+        onClick={handleContinue}
+      >
+        {loading ? 'Processing...' : 'Continue Conversation'}
+      </button>
+    </div>
+  );
+};
+
+export default ContinueConversation;

@@ -32,3 +32,9 @@ class Conversation(BaseModel):
     """
     participants: List[Participant]
     dialogTurns: List[DialogTurn]
+
+class ContinueConversationRequest(BaseModel):
+    """
+    Updates the conversation state with a new dialog turn.
+    """
+    conversation: Conversation

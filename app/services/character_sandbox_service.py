@@ -2,7 +2,7 @@ import json
 import logging
 import asyncio
 from typing import List, Dict, Tuple
-from app.schemas import Participant, Conversation, InitalizeCharactersRequest, DialogTurn
+from app.schemas import ContinueConversationRequest, Participant, Conversation, InitalizeCharactersRequest, DialogTurn
 from app.utils.env_validator import validate_chai_api_key
 from app.clients.chai_api_client import CHAIAPIClient
 
@@ -52,7 +52,6 @@ class CharacterSandboxService:
             )
 
             character_name = response_from_charAI_link1.split(".")[0]
-            logger.info(f"Generated character name: {character_name}")
 
             await asyncio.sleep(self.REQUEST_STAGGER_TIME_SECONDS * 2)
 
@@ -123,17 +122,38 @@ class CharacterSandboxService:
         logger.info(f"service initialize_characters returning {len(participants)} participants")
         return participants
     
-    def continue_conversation(self, conversation: Conversation) -> Conversation:
-        """
-        Continue a conversation by generating the next AI response.
-        
-        Args:
-            conversation: The current state of the conversation
-            
-        Returns:
-            The updated conversation
-        """
-        # For now, return the conversation as is
-        # TODO: Implement conversation continuation using CHAI API
-        logger.info(f"Continuing conversation with {len(conversation.participants)} participants and {len(conversation.dialogTurns)} turns")
+    async def continue_conversation(self, request: ContinueConversationRequest) -> Conversation:
+        # todo: update this to use the correct arguments in the call to invoke_llm by referencing the conversation state thus far, and 
+        # whether or not the user has added a comment to the conversation
+        conversation = request.conversation
+        chat_history_thus_far = []
+        for turn in conversation.dialogTurns:
+            chat_history_thus_far.append(
+                {
+                    "sender": turn.participant,
+                    "message": turn.content
+                }
+            )
+        if len(chat_history_thus_far) == 0:
+            chat_history_thus_far.append(
+                {
+                    "sender": "Jason",
+                    "message": "Why, hello there!"
+                }
+            )
+        logger.info(f"chat_history_thus_far {chat_history_thus_far}")
+        most_recent_turn_character_to_speak = "Jason"
+        next_character_to_speak = "Steve"
+        response_from_charAI_link = await self.chai_client.invoke_llm(
+              prompt="An engaging texting conversation between 2 fantasy characters, Jason and Steve.",
+              character_1_name=most_recent_turn_character_to_speak,
+              character_2_name=next_character_to_speak,
+              chat_history=chat_history_thus_far
+          )
+        conversation.dialogTurns.append(
+            DialogTurn(
+                participant=most_recent_turn_character_to_speak,
+                content=response_from_charAI_link
+            )
+        )
         return conversation

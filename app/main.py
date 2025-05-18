@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from app.schemas import InitalizeCharactersRequest, Participant, Conversation
+from app.schemas import ContinueConversationRequest, InitalizeCharactersRequest, Participant, Conversation
 from app.services.character_sandbox_service import CharacterSandboxService
 from dotenv import load_dotenv
 import logging
@@ -51,14 +51,13 @@ def create_app() -> FastAPI:
         """
         try:
             characters = await character_sandbox_service.initialize_characters(request)
-            logger.info(f"main.py initialize_characters returning.")
             return characters
         except Exception as e:
             logger.error(f"Error initializing characters: {str(e)}")
             raise HTTPException(status_code=500, detail="Error initializing characters")
 
     @app.post("/continueConversation")
-    def continue_conversation(conversation: Conversation) -> Conversation:
+    async def continue_conversation(request: ContinueConversationRequest) -> Conversation:
         """
           At a high level, this simply takes in a <Conversation> (see section "data model" below) and returns an 
           updated <Conversation> containing additional <DialogTurns> that encode the AI's response to the most recent <DialogTurn>. 
@@ -68,7 +67,8 @@ def create_app() -> FastAPI:
           See readme.md section "Conversation flow" for more.
         """
         try:
-            return character_sandbox_service.continue_conversation(conversation)
+            updated_conversation = await character_sandbox_service.continue_conversation(request)
+            return updated_conversation
         except Exception as e:
             logger.error(f"Error continuing conversation: {str(e)}")
             raise HTTPException(status_code=500, detail="Error continuing conversation")
