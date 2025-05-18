@@ -20,7 +20,7 @@ const MainPage: React.FC = () => {
     <div className="main-page">
       <h1>CHAI Character Sandbox</h1>
       <p>
-        This is a sandbox for testing and playing with CHAI characters.
+        Choose a character count and start a conversation to inialialize characters with fantasy backstories. Interact amongst the characters conversation or let them talk amongst themselves.
       </p>
       
       {!initialized ? (
@@ -36,20 +36,26 @@ const MainPage: React.FC = () => {
               </li>
             ))}
           </ul>
-          
-          {/* Display dialog turns if any exist */}
           {conversation!.dialogTurns.length > 0 && (
             <div className="dialog-turns">
               <h3>Conversation:</h3>
-              {conversation!.dialogTurns.map((turn, index) => (
-                <div key={index} className="dialog-turn">
-                  <strong>{turn.participant}:</strong> {turn.content}
-                </div>
-              ))}
+              {conversation!.dialogTurns
+                // Filter out dialog turns that begin with "This is what I know about myself"
+                .filter(turn => !turn.content.startsWith("This is what I know about myself"))
+                .map((turn, index) => {
+                  const isUser = turn.participant === "USER";
+                  
+                  return (
+                    <div 
+                      key={index} 
+                      className={`dialog-turn ${isUser ? 'user-turn' : 'ai-turn'}`}
+                    >
+                      <strong>{turn.participant}:</strong> {turn.content}
+                    </div>
+                  );
+                })}
             </div>
           )}
-          
-          {/* ContinueConversation component */}
           <ContinueConversation 
             conversation={conversation!} 
             setConversation={setConversation} 

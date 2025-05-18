@@ -261,22 +261,12 @@ class CharacterSandboxService:
         # Create a basic prompt describing the conversation
         if len(ai_participants) == 1:
             # One-on-one conversation
-            return f"An engaging conversation between {ai_participants[0].name} and a user."
+            return f"An engaging conversation between {ai_participants[0].name} and a user. {ai_participants[0].name} is a mystical in a fantasy novel."
         else:
             # Multi-character conversation
             character_names = [p.name for p in ai_participants]
             characters_str = ", ".join(character_names[:-1]) + " and " + character_names[-1] if len(character_names) > 1 else character_names[0]
-            
-            # Add backstories to provide context
-            backstories = []
-            for p in ai_participants:
-                # Take just the first sentence of each backstory to keep the prompt short
-                backstory = p.backstory if p.backstory else ''
-                backstories.append(f"{p.name}: {backstory}")
-            
-            backstories_str = " ".join(backstories)
-            
-            return f"A dialogue amongst fantasy characters in a magical realm. {characters_str}. {backstories_str}"
+            return f"A dialogue amongst fantasy characters in a magical realm. {characters_str}."
     
     def _get_most_recent_speaker(self, conversation: Conversation) -> str:        
         return conversation.dialogTurns[-1].participant
@@ -290,27 +280,28 @@ class CharacterSandboxService:
         # 2. Format the chat history for the CHAI API
         chat_history = self._format_chat_history(conversation)
         
-        # If there are no dialog turns, we need to bootstrap the conversation
-        if not chat_history:
-            # Create a generic greeting from the first speaker
-            greeting = f"Hello. I am {next_speaker.name}."
+        # If there are no AI dialog turns, we need to bootstrap the conversation with the backstory of each character.
+        if len(chat_history) < 2:
+            # For each AI character, add a dialog turn to the front of the chat history where they acknowledge their backstory
+            ai_participants = [p for p in conversation.participants if p.type == "AI"]
             
-            # Add it to the chat history
-            chat_history.append({
-                "sender": next_speaker.name,
-                "message": greeting
-            })
-            
-            # Also add it to the conversation as the first dialog turn
-            conversation.dialogTurns.append(
-                DialogTurn(
-                    participant=next_speaker.name,
-                    content=greeting
+            for participant in ai_participants:
+                # Create a message where the character acknowledges their backstory
+                backstory_message = f"This is what I know about myself. {participant.backstory}"
+                
+                # Add it to the chat history
+                chat_history.insert(0, {
+                    "sender": participant.name,
+                    "message": backstory_message
+                })
+                
+                # Also add it to the conversation as a dialog turn
+                conversation.dialogTurns.insert(0, 
+                    DialogTurn(
+                        participant=participant.name,
+                        content=backstory_message
+                    )
                 )
-            )
-            
-            # Return the conversation with the initial greeting
-            return conversation
         
         # 3. Generate an appropriate prompt
         prompt = self._generate_prompt(conversation)

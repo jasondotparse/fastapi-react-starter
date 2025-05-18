@@ -37,16 +37,35 @@
 .dialog-turns {
   margin-top: 20px;
   margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 .dialog-turn {
   padding: 10px;
   margin-bottom: 8px;
   border-radius: 5px;
-  background-color: #f0f0f0;
+  max-width: 70%;
 }
 
 .dialog-turn strong {
   color: #333;
   margin-right: 5px;
+}
+
+/* User dialog turns - light blue and right-aligned */
+.user-turn {
+  background-color: #e3f2fd; /* Light blue */
+  align-self: flex-end; /* Right-aligned */
+  margin-left: auto;
+  border-bottom-right-radius: 0; /* Bubble chat style */
+}
+
+/* AI dialog turns - left-aligned */
+.ai-turn {
+  background-color: #f0f0f0; /* Light gray */
+  align-self: flex-start; /* Left-aligned */
+  margin-right: auto;
+  border-bottom-left-radius: 0; /* Bubble chat style */
 }
