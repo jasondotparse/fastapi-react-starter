@@ -279,8 +279,8 @@ class CharacterSandboxService:
         # 2. Format the chat history for the CHAI API
         chat_history = self._format_chat_history(conversation)
         
-        # If there are no AI dialog turns, we need to bootstrap the conversation with the backstory of each character.
-        # This ensures that AI characters understand their backstories and can respond appropriately.
+        # Bootstrap the conversation with the backstory of each character.
+        # This is done by adding 'hidden' dialog turns to the front of the chat history, since we don't have a "system" message in the CHAI API.
         if len(chat_history) < 2:
             # For each AI character, add a dialog turn to the front of the chat history where they acknowledge their backstory
             ai_participants = [p for p in conversation.participants if p.type == "AI"]
