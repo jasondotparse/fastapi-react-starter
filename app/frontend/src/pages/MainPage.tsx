@@ -20,14 +20,13 @@ const MainPage: React.FC = () => {
     <div className="main-page">
       <h1>CHAI Character Sandbox</h1>
       <p>
-        Choose a character count and start a conversation to inialialize characters with fantasy backstories. Interact amongst the characters conversation or let them talk amongst themselves.
+        Choose a character count and start a conversation to bootstrap characters with fantasy backstories.
       </p>
       
       {!initialized ? (
         <ConversationInitializer onInitialized={handleInitialized} />
       ) : (
         <div className="conversation-container">
-          <h2>Conversation Initialized!</h2>
           <p>Participants:</p>
           <ul>
             {conversation!.participants.map((participant, index) => (
@@ -36,14 +35,16 @@ const MainPage: React.FC = () => {
               </li>
             ))}
           </ul>
+          <p>Interact amongst the characters conversation or let them talk amongst themselves. 
+          Optionally, reference a character by name to direct a comment towards them.</p>
           {conversation!.dialogTurns.length > 0 && (
             <div className="dialog-turns">
               <h3>Conversation:</h3>
               {conversation!.dialogTurns
-                // Filter out dialog turns that begin with "This is what I know about myself"
+                // Filter out dialog turns that begin with "This is what I know about myself"; these essentially are system messages
                 .filter(turn => !turn.content.startsWith("This is what I know about myself"))
                 .map((turn, index) => {
-                  const isUser = turn.participant === "USER";
+                  const isUser = turn.participant === "Stranger";
                   
                   return (
                     <div 

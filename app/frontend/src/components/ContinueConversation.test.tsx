@@ -190,6 +190,69 @@ describe('ContinueConversation', () => {
       // Check that the textarea is cleared
       expect(textarea).toHaveValue('');
     });
+
+    test('submits when Enter key is pressed', async () => {
+      const setConversationMock = jest.fn();
+      
+      render(
+        <ContinueConversation 
+          conversation={mockConversationWithHuman} 
+          setConversation={setConversationMock} 
+        />
+      );
+      
+      const textarea = screen.getByPlaceholderText('Type your message...');
+      
+      // Add user input to enable the button
+      fireEvent.change(textarea, { target: { value: 'Test message' } });
+      
+      // Verify the button is enabled
+      expect(screen.getByText('Continue Conversation')).not.toBeDisabled();
+      
+      // Press Enter key
+      fireEvent.keyDown(textarea, { key: 'Enter', code: 'Enter' });
+      
+      // Wait for the API call to complete
+      await waitFor(() => {
+        expect(agentPlaygroundBackendClient.continueConversation).toHaveBeenCalled();
+      });
+      
+      // Wait for the setConversation to be called
+      await waitFor(() => {
+        expect(setConversationMock).toHaveBeenCalled();
+      });
+      
+      // Check that the conversation state was updated with the mock response
+      expect(setConversationMock).toHaveBeenCalledWith(mockUpdatedConversation);
+      
+      // Check that the textarea is cleared
+      expect(textarea).toHaveValue('');
+    });
+
+    test('does not submit when Shift+Enter is pressed', () => {
+      const setConversationMock = jest.fn();
+      
+      render(
+        <ContinueConversation 
+          conversation={mockConversationWithHuman} 
+          setConversation={setConversationMock} 
+        />
+      );
+      
+      const textarea = screen.getByPlaceholderText('Type your message...');
+      
+      // Add user input
+      fireEvent.change(textarea, { target: { value: 'Test message' } });
+      
+      // Press Shift+Enter key
+      fireEvent.keyDown(textarea, { key: 'Enter', code: 'Enter', shiftKey: true });
+      
+      // Check that the API was not called
+      expect(agentPlaygroundBackendClient.continueConversation).not.toHaveBeenCalled();
+      
+      // Check that the conversation state was not updated
+      expect(setConversationMock).not.toHaveBeenCalled();
+    });
   });
 
   // Button state tests

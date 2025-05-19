@@ -38,6 +38,15 @@ const ContinueConversation: React.FC<ContinueConversationProps> = ({
     return loading;
   };
   
+  // Handle key press in textarea
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // If Enter is pressed without Shift key, submit the form
+    if (e.key === 'Enter' && !e.shiftKey && !isContinueButtonDisabled()) {
+      e.preventDefault(); // Prevent adding a new line
+      handleContinue();
+    }
+  };
+  
   // Handle continue button click
   const handleContinue = async () => {
     setLoading(true);
@@ -86,6 +95,7 @@ const ContinueConversation: React.FC<ContinueConversationProps> = ({
             <textarea
               value={userInput}
               onChange={(e) => setUserInput(e.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder="Type your message..."
               disabled={loading}
             />
