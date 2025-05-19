@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import ConversationInitializer from '../components/ConversationInitializer';
-import ContinueConversation from '../components/ContinueConversation';
+import ConversationInitializer from '../components/ConversationInitializer/ConversationInitializer';
+import ContinueConversation from '../components/ContinueConversation/ContinueConversation';
 import { Participant, Conversation } from '../types/models';
 import './MainPage.css';
 
@@ -42,7 +42,7 @@ const MainPage: React.FC = () => {
               <h3>Conversation:</h3>
               {conversation!.dialogTurns
                 // Filter out dialog turns that begin with "This is what I know about myself"; these essentially are system messages
-                .filter(turn => !turn.content.startsWith("This is what I know about myself"))
+                .filter(turn => !turn.content.startsWith("This is what I know about myself:"))
                 .map((turn, index) => {
                   const isUser = turn.participant === "Stranger";
                   

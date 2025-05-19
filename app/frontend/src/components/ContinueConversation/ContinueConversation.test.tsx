@@ -2,8 +2,8 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ContinueConversation from './ContinueConversation';
-import { Conversation, Participant, DialogTurn } from '../types/models';
-import { agentPlaygroundBackendClient } from '../services/AgentPlaygroundBackendClient';
+import { Conversation, Participant, DialogTurn } from '../../types/models';
+import { agentPlaygroundBackendClient } from '../../services/AgentPlaygroundBackendClient';
 
 // Mock the backend client
 jest.mock('../services/AgentPlaygroundBackendClient', () => ({

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { agentPlaygroundBackendClient } from '../services/AgentPlaygroundBackendClient';
-import { Conversation, Participant } from '../types/models';
+import React, { useState } from 'react';
+import { agentPlaygroundBackendClient } from '../../services/AgentPlaygroundBackendClient';
+import { Conversation } from '../../types/models';
 import './ContinueConversation.css';
 
 interface ContinueConversationProps {
