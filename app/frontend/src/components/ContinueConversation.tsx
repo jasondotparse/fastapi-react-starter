@@ -53,7 +53,7 @@ const ContinueConversation: React.FC<ContinueConversationProps> = ({
           dialogTurns: [
             ...conversation.dialogTurns,
             {
-              participant: "USER",
+              participant: "Stranger",
               content: userInput.trim()
             }
           ]

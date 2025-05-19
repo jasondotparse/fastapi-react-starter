@@ -125,7 +125,7 @@ class CharacterSandboxService:
             participants.append(
                 Participant(
                     type="HUMAN",
-                    name="Unknown",
+                    name="Stranger",
                     backstory="A curious human exploring in a fantasy realm."
                 )
             )
@@ -287,7 +287,7 @@ class CharacterSandboxService:
             
             for participant in ai_participants:
                 # Create a message where the character acknowledges their backstory
-                backstory_message = f"This is what I know about myself. {participant.backstory}"
+                backstory_message = f"This is what I know about myself: {participant.backstory}"
                 
                 # Add it to the chat history
                 chat_history.insert(0, {
@@ -302,6 +302,12 @@ class CharacterSandboxService:
                         content=backstory_message
                     )
                 )
+
+            # Add a dialogue turn where the user introduces themselves.
+            chat_history.insert(0, {
+                "sender": "Stranger",
+                "message": "This is what I know about myself: Nothing is known about me. I'm a stranger"
+            })
         
         # 3. Generate an appropriate prompt
         prompt = self._generate_prompt(conversation)
