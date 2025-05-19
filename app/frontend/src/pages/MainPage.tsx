@@ -20,7 +20,7 @@ const MainPage: React.FC = () => {
     <div className="main-page">
       <h1>CHAI Character Sandbox</h1>
       <p>
-        Choose a character count and start a conversation to bootstrap characters with fantasy backstories.
+        Choose a character count and start a conversation to bootstrap a cast of fantasy characters with backstories.
       </p>
       
       {!initialized ? (

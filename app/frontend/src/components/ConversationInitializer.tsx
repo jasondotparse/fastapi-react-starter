@@ -92,7 +92,7 @@ const ConversationInitializer: React.FC<ConversationInitializerProps> = ({ onIni
         <div className="loading-container">
           <div className="spinner"></div>
           <div className="loading-message">
-            generating character names and backstories...
+            generating character names and backstories... may take up to 30 seconds
           </div>
         </div>
       )}

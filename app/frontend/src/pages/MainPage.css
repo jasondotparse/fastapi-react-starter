@@ -14,7 +14,6 @@
   padding: 15px;
   border: 1px solid #ddd;
   border-radius: 5px;
-  background-color: #f9f9f9;
 }
 
 .conversation-container h2 {
@@ -30,7 +29,6 @@
 .conversation-container li {
   padding: 8px;
   margin-bottom: 5px;
-  background-color: #f0f0f0;
   border-radius: 4px;
 }
 
@@ -56,7 +54,7 @@
 
 /* User dialog turns - light blue and right-aligned */
 .user-turn {
-  background-color: #e3f2fd; /* Light blue */
+  background-color: #8ecbf8; /* Light blue */
   align-self: flex-end; /* Right-aligned */
   margin-left: auto;
   border-bottom-right-radius: 0; /* Bubble chat style */
@@ -64,7 +62,7 @@
 
 /* AI dialog turns - left-aligned */
 .ai-turn {
-  background-color: #f0f0f0; /* Light gray */
+  background-color: #2ce45a; /* Light gray */
   align-self: flex-start; /* Left-aligned */
   margin-right: auto;
   border-bottom-left-radius: 0; /* Bubble chat style */
