@@ -27,9 +27,11 @@ class CharacterSandboxService:
             response: The raw response from the CHAI API
             
         Returns:
-            The extracted character name
+            The extracted character name with any quotation marks removed
         """
         character_name = re.split(r'\.|\*|Jason|<| ', response)[0]  # Extract the name before any additional text
+        character_name = character_name.replace('"', '').replace("'", "") # make sure it's not wrapped in quotes
+        
         self.generated_character_names.append(character_name)
         return character_name
     

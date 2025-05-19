@@ -1,6 +1,8 @@
 # Application overview of CHAI Agent Playground
 This full stack web app is a simple playground in which a user can have a conversation with one or more CHAI characters. The user can choose to participate in the conversation or simply let the AI bot(s) chat amongst themselves. The user remains in control of the dialog turn progression and can interject at any time.
 
+<img src="documentation/UI_screenshot.png" alt="UI Screenshot" width="50%">
+
 ## Getting started
 ### Running the app locally
 
