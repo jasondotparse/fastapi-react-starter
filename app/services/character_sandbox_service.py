@@ -53,8 +53,7 @@ class CharacterSandboxService:
         """
         Generate a complete character (name and backstory) using the CHAI API.
         The API uses a staggered approach to avoid 429 errors due to rate limits.
-        The stagger time was set to 5 seconds, but this can be adjusted if we can remove the throttling
-        which has apparently been applied to this API key.
+        The stagger time was set to 5 seconds, but this can be adjusted if we can reduce the throttling
         
         Args:
             index: The index of the character being generated
@@ -281,6 +280,7 @@ class CharacterSandboxService:
         chat_history = self._format_chat_history(conversation)
         
         # If there are no AI dialog turns, we need to bootstrap the conversation with the backstory of each character.
+        # This ensures that AI characters understand their backstories and can respond appropriately.
         if len(chat_history) < 2:
             # For each AI character, add a dialog turn to the front of the chat history where they acknowledge their backstory
             ai_participants = [p for p in conversation.participants if p.type == "AI"]

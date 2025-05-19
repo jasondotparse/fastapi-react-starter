@@ -1,6 +1,21 @@
 # Application overview of CHAI Agent Playground
 This full stack web app is a simple playground in which a user can have a conversation with one or more CHAI characters. The user can choose to participate in the conversation or simply let the AI bot(s) chat amongst themselves. The user remains in control of the dialog turn progression and can interject at any time.
 
+## Getting started
+### Running the app locally
+[todo]
+### Unit test suite
+#### Backend tests
+```bash
+pytest
+```
+
+#### Frontend tests
+```bash
+cd app/frontend
+npm test
+```
+
 ## Application high level architecture:
 ### Front end 
 Web UI: React.js based Typescript front end. It displays the chat history of the conversation, including all characters who have participated in the conversation, as well as a simple text field where the user can (optionally) add a <DialogTurn>, as well as a "Continue" button which, under the hood, invokes the back end POST /continueConversation API. The job of the front end is incredibly simple: Display the Conversation dialog turns, and provide an interface through which the user of the app can add DialogTurns to the conversation.
@@ -140,4 +155,4 @@ CHAI_API_BEARER_TOKEN="Bearer abc123xyz456"
 * The API param chat_history.message.sender fields can contain names which are neither bot_name nor user_name. This opens the door to implement chat conversations which consist of more than 2 characters.
 ### notes on design decisions
 * The Conversation state is held fully in the request / response schema between the back end and front end. I chose this paradigm for its simplicity and elegance, as despite the fact that it can grow indefinitely, the reality is that these requests / responses never grow to such a length that it is problematic from a web performance standpoint. 
-* No LLM orchestration framework: since the functionalities of the back end chains / conversation orchestration are so simple, I decided not to add an additional dependency and use a framework like LangGraph or AutoGen. 
+* No LLM orchestration framework: since the functionalities of the back end chains / conversation orchestration are so simple, I decided not to add an additional dependency and use a framework like LangGraph or AutoGen.
