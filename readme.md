@@ -3,7 +3,64 @@ This full stack web app is a simple playground in which a user can have a conver
 
 ## Getting started
 ### Running the app locally
-[todo]
+
+#### Prerequisites
+- Python (recommended version: >=3.11)
+- Node.js (recommended version: >=v20)
+
+#### Backend Setup
+
+1. **Create and activate a Python virtual environment**:
+   ```bash
+   python -m venv .venv
+   
+   # On macOS/Linux
+   source .venv/bin/activate
+   ```
+
+2. **Install backend dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Add your CHAI AI key to the .env file** in the project root, update the .env and add your API key such that it looks like this:
+   ```
+   CHAI_API_BEARER_TOKEN="Bearer your_token_here"
+   ```
+
+4. **Start the FastAPI backend server**:
+   ```bash
+   python -m uvicorn app.main:app --reload --timeout-keep-alive 300
+   ```
+
+#### Frontend Setup
+
+1. **Navigate to the frontend directory**:
+   ```bash
+   cd app/frontend
+   ```
+
+2. **Install Node.js dependencies**:
+   ```bash
+   npm install
+   ```
+
+3. **Start the React development server**:
+   ```bash
+   npm start
+   ```
+
+#### Accessing the Application
+
+Once both servers are running:
+- The frontend will be available at: http://localhost:3000
+- The backend API will be available at: http://localhost:8000
+
+#### Troubleshooting Tips
+
+- If you encounter CORS issues, ensure both servers are running and the frontend is configured to connect to the correct backend URL.
+- If you get authentication errors, check that your CHAI API token is correctly set in the .env file.
+
 ### Unit test suite
 #### Backend tests
 ```bash
@@ -144,7 +201,7 @@ CHAI_API_BEARER_TOKEN="Bearer abc123xyz456"
 * Allow the customer to edit any individiual dialog turn, not just add new ones to the end of the Conversation.
 * Back story customization: Instead of hard coding agents to be fantasy characters, allow the user to provide the "setting" in which the characters are generated, or furthermore, allow users to write their own agent backstories / descriptions.
 * The back end logic for AI orchestration could be implemented in LangGraph, providing a neat node+edge-based agent communication paradigm, and allowing for easy extensibility with Tool Use. 
-* Deploy the back end to a serverless function such as AWS Lambda, gated behind an AWS API Gateway, such that the web app could be accessed without needing a locally running instance of the server. This would require only light refactoring of the service logic, since it was designed to be fully stateless. The web UI could be deployed by vending its web asset bundle via a simple AWS S3 bucket + Cloudfront CDN configuration.
+* Deploy the back end to a serverless function such as AWS Lambda, gated behind an AWS API Gateway, such that the web app could be accessed without requiring a locally running instance of the server. This would require only light refactoring of the service logic, since it was designed to be fully stateless. The web UI could be deployed by vending its web asset bundle via a simple AWS S3 bucket + Cloudfront CDN configuration.
 * Allow for infinite conversation dialog turn length: instead of passing the entire conversation history in the CHAI API, only pass the most recent X number of dialog turns, such that the context window is never reached. To do this in such a way that characters don't "forget" about dialog turns outside their context window, prompt compression could be done via recursive summarization. 
 
 ## Appendix
@@ -153,6 +210,6 @@ CHAI_API_BEARER_TOKEN="Bearer abc123xyz456"
 * The request can take in more parameters than the documented provided in the Notion doc. These include "temperature" and "top_p", "max_output_tokens". Given these params, the request will respond with a 200, but it seemingly doesn't use them to alter the underlying LLM's input arguments, as the response contains the same fields in response.generation_params. This is annoying for character name generation, which would have a cleaner implementation if we could figure out a way to generate less deterministic outputs given the same LLM input. It also means the character name generator produces more characters than we need it to, slowing conversation initialization.
 * The API is somewhat throttle-happy, meaning any prompt chains need to be implemented with a "cooldown" mechanism between LLM invocations. This is probably just a throttle applied to the provided API key... I assume these are given out for internal testing and are not the same APIs as they are obviously not serving the prod app. This is annoyning as it constrains the ability to use libraries like asyncio to fire off many requests at once and gather the responses. This limitation is most visible in the character backstory initialization sequence. 
 * The API param chat_history.message.sender fields can contain names which are neither bot_name nor user_name. This opens the door to implement chat conversations which consist of more than 2 characters.
-### notes on design decisions
+### additional notes on design decisions
 * The Conversation state is held fully in the request / response schema between the back end and front end. I chose this paradigm for its simplicity and elegance, as despite the fact that it can grow indefinitely, the reality is that these requests / responses never grow to such a length that it is problematic from a web performance standpoint. 
 * No LLM orchestration framework: since the functionalities of the back end chains / conversation orchestration are so simple, I decided not to add an additional dependency and use a framework like LangGraph or AutoGen.

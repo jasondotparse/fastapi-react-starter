@@ -6,4 +6,3 @@ memory-bank
 .DS_Store
 /.venv
 /app/__pycache__
-.env
